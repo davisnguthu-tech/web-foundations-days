@@ -1,0 +1,12 @@
+/* Normal (wide) screens: input and button side by side */
+#note-form {
+  display: flex;
+  gap: 8px;
+}
+ 
+/* Small screens (phones): stack them vertically */
+@media (max-width: 600px) {
+  #note-form {
+    flex-direction: column;
+  }
+}
