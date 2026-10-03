@@ -111,6 +111,11 @@ console.log(isDuplicate("Walk the dog"));
 
 /* ===== 6. addNote ===== */
 function addNote(text, category) {
+  if (typeof text !== "string") {
+    console.log("Note not added: Text must be a string.");
+    return false;
+  }
+
   const validCategories = ["personal", "work", "study"];
   const trimmedText = text.trim();
 
@@ -138,7 +143,7 @@ function addNote(text, category) {
 console.log(addNote("Schedule dentist appointment", "personal")); 
 // Expected: true
 
-// Edge case: Invalid category prevents addition
-console.log(addNote("Buy groceries", "shopping")); 
-// Logs: "Note not added: Category must be 'personal', 'work', or 'study'."
+// Edge case: Non-string input is safely rejected before calling trim
+console.log(addNote(12345, "work")); 
+// Logs: "Note not added: Text must be a string."
 // Expected: false
