@@ -1,0 +1,168 @@
+/* ===== Reset ===== */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+img,
+picture,
+svg {
+    display: block;
+    max-width: 100%;
+}
+
+ul,
+ol {
+    list-style: none;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button,
+input,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
+/* ===== 1. CSS Variables for Themes ===== */
+:root {
+    --bg-color: #f6f5f2;
+    --text-color: #22262b;
+    --card-bg: #ffffff;
+    --border-color: #dcdad4;
+    --header-bg: #1f3a3d;
+    --header-text: #f6f5f2;
+    --btn-bg: #1f3a3d;
+    --btn-hover: #2b5054;
+    --btn-text: #ffffff;
+    --warning-color: #d97706; /* Orange */
+    --over-color: #dc2626;    /* Red */
+}
+
+/* Dark theme overrides only the CSS variables */
+body.dark {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --card-bg: #1e1e1e;
+    --border-color: #333333;
+    --header-bg: #2a2a2a;
+    --header-text: #ffffff;
+    --btn-bg: #3b82f6;
+    --btn-hover: #2563eb;
+    --btn-text: #ffffff;
+}
+
+/* ===== Base body styles ===== */
+body {
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+}
+
+/* ===== Header ===== */
+header {
+    background-color: var(--header-bg);
+    color: var(--header-text);
+    padding: 2.5rem 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+/* ===== Textarea & Form Elements ===== */
+label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+}
+
+textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+textarea:focus {
+    border-color: var(--btn-bg);
+    box-shadow: 0 0 0 3px rgba(31, 58, 61, 0.12);
+}
+
+/* ===== Counters & Specific Warning States ===== */
+#char-count,
+#word-count {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.warning {
+    color: var(--warning-color);
+}
+
+.over {
+    color: var(--over-color);
+    font-weight: bold;
+}
+
+/* ===== Buttons ===== */
+button {
+    background-color: var(--btn-bg);
+    color: var(--btn-text);
+    border: none;
+    border-radius: 6px;
+    padding: 0.65rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+button:hover {
+    background-color: var(--btn-hover);
+    transform: translateY(-1px);
+}
+
+/* ===== Media Queries ===== */
+@media (max-width: 480px) {
+    header {
+        padding: 1.5rem 1rem 1.25rem;
+    }
+
+    header h1 {
+        font-size: 1.5rem;
+    }
+}
