@@ -22,7 +22,7 @@ ul {
     list-style: none;
 }
 
-/* Ordered list styling for numbered instructions */
+/* Ordered list styling for step-by-step instructions */
 section ol {
     list-style-type: decimal;
     padding-left: 1.25rem;
@@ -150,7 +150,7 @@ section:first-of-type {
     line-height: 1.4;
 }
 
-/* ===== Form Controls ===== */
+/* ===== Cohesive Form Inputs ===== */
 #note-form,
 #feedback-form {
     display: flex;
@@ -165,10 +165,14 @@ label {
     color: var(--text-main);
 }
 
-input[type="text"],
-input[type="email"],
-textarea,
-select {
+/* Unified styling across home page and feedback form */
+#note-form input[type="text"],
+#note-form textarea,
+#note-form select,
+#feedback-form input[type="text"],
+#feedback-form input[type="email"],
+#feedback-form textarea,
+#search-input {
     width: 100%;
     padding: 0.6rem 0.8rem;
     border: 1px solid var(--border-color);
@@ -179,9 +183,12 @@ select {
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-input:focus,
-textarea:focus,
-select:focus {
+#note-form input:focus,
+#note-form textarea:focus,
+#note-form select:focus,
+#feedback-form input:focus,
+#feedback-form textarea:focus,
+#search-input:focus {
     border-color: #1f3a3d;
     box-shadow: 0 0 0 3px rgba(31, 58, 61, 0.12);
 }
@@ -191,7 +198,7 @@ textarea {
     min-height: 100px;
 }
 
-/* Validation Feedback Colors */
+/* Validation Feedback & Character Counts */
 .char-info {
     display: flex;
     justify-content: space-between;
@@ -215,6 +222,68 @@ textarea {
     font-weight: 600;
 }
 
+/* ===== Buttons & Hover Transitions ===== */
+button,
+input[type="submit"] {
+    align-self: flex-start;
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.65rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+button:hover,
+input[type="submit"]:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+button:active,
+input[type="submit"]:active {
+    transform: translateY(0);
+}
+
+.delete-btn {
+    background-color: #dc2626;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+.delete-btn:hover {
+    background-color: #b91c1c;
+}
+
+/* ===== Shortcuts Table ===== */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-size: 0.95rem;
+}
+
+th,
+td {
+    text-align: left;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--border-color);
+}
+
+th {
+    background-color: var(--bg-main);
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+tbody tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.015);
+}
+
 /* ===== Note Cards & Category Styling ===== */
 #notes-list {
     margin-top: 1rem;
@@ -236,5 +305,86 @@ textarea {
 }
 
 .note-card.category-personal { border-left-color: #2563eb; }
-.note-card.category-work { border-left-color: #16a34a; }
+.note-card.category-work { border-left-color: #059669; }
 .note-card.category-ideas { border-left-color: #d97706; }
+
+.note-content {
+    flex: 1;
+}
+
+.note-text {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    white-space: pre-wrap;
+}
+
+.note-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.badge {
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: capitalize;
+    color: #ffffff;
+    background-color: #1f3a3d;
+}
+
+.badge-personal { background-color: #2563eb; }
+.badge-work { background-color: #059669; }
+.badge-ideas { background-color: #d97706; }
+
+.empty-message {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 2rem 0;
+}
+
+/* ===== Responsive Mobile Layout ===== */
+@media (max-width: 600px) {
+    header {
+        padding: 1.75rem 1rem 1.5rem;
+    }
+
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    header p {
+        font-size: 0.875rem;
+    }
+
+    header nav {
+        gap: 0.85rem;
+        flex-wrap: wrap;
+    }
+
+    main {
+        padding: 1.25rem 1rem 3rem;
+    }
+
+    section {
+        padding: 1.25rem 1rem;
+    }
+
+    .note-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .delete-btn {
+        align-self: flex-end;
+    }
+
+    th,
+    td {
+        padding: 0.5rem 0.6rem;
+        font-size: 0.875rem;
+    }
+}
