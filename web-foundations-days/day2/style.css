@@ -18,9 +18,14 @@ svg {
     max-width: 100%;
 }
 
-ul,
-ol {
+ul {
     list-style: none;
+}
+
+/* Ordered list styling for numbered instructions */
+section ol {
+    list-style-type: decimal;
+    padding-left: 1.25rem;
 }
 
 a {
@@ -30,18 +35,40 @@ a {
 
 button,
 input,
-textarea {
+textarea,
+select {
     font: inherit;
     color: inherit;
 }
 
-/* ===== Base body styles ===== */
+/* ===== Base Body Styles & Variables ===== */
+:root {
+    --bg-main: #f6f5f2;
+    --bg-card: #ffffff;
+    --text-main: #22262b;
+    --text-muted: #666666;
+    --border-color: #dcdad4;
+    --primary-color: #1f3a3d;
+    --primary-hover: #2b5054;
+}
+
+body.dark-mode {
+    --bg-main: #12181b;
+    --bg-card: #1e262c;
+    --text-main: #e0e6ed;
+    --text-muted: #9ba7b3;
+    --border-color: #34414d;
+    --primary-color: #2b5054;
+    --primary-hover: #3a686d;
+}
+
 body {
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     font-size: 16px;
     line-height: 1.5;
-    background-color: #f6f5f2;
-    color: #22262b;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 main {
@@ -94,9 +121,9 @@ header nav a:focus-visible {
     color: #ffffff;
 }
 
-/* ===== Section cards ===== */
+/* ===== Section Cards ===== */
 section {
-    background-color: #ffffff;
+    background-color: var(--bg-card);
     border-radius: 10px;
     padding: 1.5rem 1.75rem;
     margin-top: 1.5rem;
@@ -107,7 +134,7 @@ section:first-of-type {
     margin-top: 2rem;
 }
 
-/* ===== Features grid ===== */
+/* ===== Features Grid ===== */
 .features-grid {
     margin-top: 1rem;
     display: grid;
@@ -116,39 +143,15 @@ section:first-of-type {
 }
 
 .features-grid li {
-    background-color: #f6f5f2;
+    background-color: var(--bg-main);
     border-radius: 8px;
     padding: 1rem;
     font-size: 0.95rem;
     line-height: 1.4;
 }
 
-/* ===== Shortcuts Table ===== */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-    font-size: 0.95rem;
-}
-
-th,
-td {
-    text-align: left;
-    padding: 0.75rem 0.85rem;
-    border-bottom: 1px solid #eae7e1;
-}
-
-th {
-    background-color: #f6f5f2;
-    font-weight: 600;
-    color: #1f3a3d;
-}
-
-tbody tr:last-child td {
-    border-bottom: none;
-}
-
-/* ===== Feedback Form ===== */
+/* ===== Form Controls ===== */
+#note-form,
 #feedback-form {
     display: flex;
     flex-direction: column;
@@ -156,67 +159,82 @@ tbody tr:last-child td {
     margin-top: 1rem;
 }
 
-#feedback-form label {
+label {
     font-weight: 600;
     font-size: 0.875rem;
-    color: #1f3a3d;
-    margin-bottom: -0.35rem;
+    color: var(--text-main);
 }
 
-#feedback-form input[type="text"],
-#feedback-form input[type="email"],
-#feedback-form textarea {
+input[type="text"],
+input[type="email"],
+textarea,
+select {
     width: 100%;
     padding: 0.6rem 0.8rem;
-    border: 1px solid #dcdad4;
+    border: 1px solid var(--border-color);
     border-radius: 6px;
-    background-color: #faf9f6;
+    background-color: var(--bg-card);
+    color: var(--text-main);
     outline: none;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-#feedback-form input[type="text"]:focus,
-#feedback-form input[type="email"]:focus,
-#feedback-form textarea:focus {
+input:focus,
+textarea:focus,
+select:focus {
     border-color: #1f3a3d;
     box-shadow: 0 0 0 3px rgba(31, 58, 61, 0.12);
 }
 
-#feedback-form textarea {
+textarea {
     resize: vertical;
     min-height: 100px;
 }
 
-/* ===== Buttons ===== */
-button {
-    align-self: flex-start;
-    background-color: #1f3a3d;
-    color: #ffffff;
-    border: none;
-    border-radius: 6px;
-    padding: 0.65rem 1.25rem;
+/* Validation Feedback Colors */
+.char-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.char-info .warning {
+    color: #d97706;
     font-weight: 600;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
-button:hover {
-    background-color: #2b5054;
-    transform: translateY(-1px);
+.char-info .over {
+    color: #dc2626;
+    font-weight: 700;
 }
 
-/* ===== Media Queries ===== */
-@media (max-width: 480px) {
-    header {
-        padding: 1.5rem 1rem 1.25rem;
-    }
-
-    header h1 {
-        font-size: 1.5rem;
-    }
-
-    header p {
-        font-size: 0.875rem;
-    }
+#error-message {
+    color: #dc2626;
+    font-size: 0.875rem;
+    font-weight: 600;
 }
+
+/* ===== Note Cards & Category Styling ===== */
+#notes-list {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.note-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-left: 5px solid #1f3a3d;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.note-card.category-personal { border-left-color: #2563eb; }
+.note-card.category-work { border-left-color: #16a34a; }
+.note-card.category-ideas { border-left-color: #d97706; }
