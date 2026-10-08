@@ -45,7 +45,6 @@ function renderUsers(list) {
 
   if (list.length === 0) {
     const emptyLi = document.createElement("li");
-    emptyLi.className = "empty-message";
     emptyLi.textContent = "No users match your filter.";
     usersList.appendChild(emptyLi);
     return;
@@ -53,8 +52,8 @@ function renderUsers(list) {
 
   list.forEach((user) => {
     const li = document.createElement("li");
-    li.style.padding = "0.85rem";
-    li.style.borderBottom = "1px solid var(--border-color)";
+    li.style.padding = "0.75rem";
+    li.style.borderBottom = "1px solid #ccc";
     li.style.marginBottom = "0.5rem";
 
     const nameElem = document.createElement("h3");
@@ -82,11 +81,16 @@ function renderUsers(list) {
 // 4. Filtering Logic (Input Event)
 // ==========================================
 function handleFilter() {
+  if (allUsers.length === 0) {
+    statusElem.textContent = "Please load users before filtering.";
+    return;
+  }
+
   const query = filterInput.value.trim().toLowerCase();
-  const filteredUsers = allUsers.filter((user) =>
+  const filtered = allUsers.filter((user) =>
     user.name.toLowerCase().includes(query)
   );
-  renderUsers(filteredUsers);
+  renderUsers(filtered);
 }
 
 // ==========================================
