@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Directory</title>
+  <link rel="stylesheet" href="../day2/style.css">
+  <script src="users.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>User Directory</h1>
+    <p>Fetch and filter user details from JSONPlaceholder</p>
+  </header>
+
+  <main>
+    <section>
+      <button id="load-users">Load Users</button>
+      
+      <div style="margin-top: 1rem;">
+        <label for="filter-input">Filter by name:</label>
+        <input type="text" id="filter-input" placeholder="Type a name to filter users...">
+      </div>
+
+      <p id="status" style="margin-top: 1rem; font-weight: 600;"></p>
+
+      <ul id="users-list" style="margin-top: 1rem;"></ul>
+    </section>
+  </main>
+</body>
+</html>
