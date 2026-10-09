@@ -26,8 +26,3 @@ Relational databases cannot cleanly represent a direct Many-to-Many relationship
 CREATE INDEX idx_enrolments_student_id ON enrolments(student_id);
 CREATE INDEX idx_enrolments_course_id ON enrolments(course_id);
 ```
-
-### Performance Benefits
-- **`idx_enrolments_student_id`**: Accelerates queries filtering or joining by student (e.g., fetching all courses taken by a student).
-- **`idx_enrolments_course_id`**: Accelerates queries filtering or joining by course (e.g., listing all enrolled students or counting registrations per course).
-
