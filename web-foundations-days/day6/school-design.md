@@ -1,28 +1,3 @@
-# School Database Design & Relational Logic
-
-## Table Explanations
-
-1. **`students`**: Stores core biographical and login identity data for each student (first name, last name, and unique email address).
-2. **`courses`**: Stores information on modules offered by the institution, including course titles and unique course codes.
-3. **`enrolments`**: Serves as the junction (bridge) table mapping students to courses. It maintains foreign key references while holding relationship-specific attributes such as `grade`.
-
----
-
-## Relationships & Join Table Rationale
-
-- **`students` to `enrolments`**: One-to-Many (1:N). A student can have multiple course enrolment entries, but each entry belongs to a single student.
-- **`courses` to `enrolments`**: One-to-Many (1:N). A course can appear across multiple enrolment records, but each record references a single course.
-- **`students` to `courses`**: Many-to-Many (M:N). A student takes multiple courses, and a course accommodates multiple students.
-
-### Why a Join Table is Necessary
-
-Relational databases cannot cleanly represent a direct Many-to-Many relationship without introducing anti-patterns such as storing comma-separated values in a single column or duplicating entity records across multiple rows. The `enrolments` join table breaks the M:N mapping into two normalized 1:N relationships while serving as the logical container for contextual values like `grade`.
-
----
-
-## Indexing Strategy
-
-```sql
-CREATE INDEX idx_enrolments_student_id ON enrolments(student_id);
-CREATE INDEX idx_enrolments_course_id ON enrolments(course_id);
-```
+# School Database Design & Relational Logic`n`n## Table Explanations`n1. **`students`**: Stores biographical and login data.`n2. **`courses`**: Stores module titles and course codes.`n3. **`enrolments`**: Junction table mapping students to courses with `grade`.`n`n---`n`n## Relationships & Join Table Rationale`n- **`students` to `enrolments`**: One-to-Many (1:N).`n- **`courses` to `enrolments`**: One-to-Many (1:N).`n- **`students` to `courses`**: Many-to-Many (M:N).`n`n### Why a Join Table is Necessary`nRelational databases cannot represent M:N relationships directly without duplicate data or anti-patterns. The `enrolments` table resolves M:N into two 1:N relationships.
+`n---`n`n## Indexing Strategy`n```sql`nCREATE INDEX idx_enrolments_student_id ON enrolments(student_id);`nCREATE INDEX idx_enrolments_course_id ON enrolments(course_id);`n````n`n### Performance Benefits & O(log N) Justification`n- **`idx_enrolments_student_id`**: Accelerates transcript and schedule queries (`WHERE student_id = ?`). Without an index, lookups force a full table scan taking O(N) time. A B-tree index reduces lookups and multi-table JOINs to logarithmic O(log N) time complexity.`n- **`idx_enrolments_course_id`**: Speeds up course roster lookups and registration counting.
+`n---`n`n## Database Architecture Choice: SQL vs. NoSQL`nAn academic record system requires strict transactional consistency, referential integrity, and ACID compliance to prevent duplicate registrations or orphaned grade records. Relational SQL databases enforce these natively through schema constraints like `FOREIGN KEY ... ON DELETE CASCADE` and composite `UNIQUE(student_id, course_id)` constraints. Document-based NoSQL databases require duplicating data across documents or writing error-prone manual join logic, making SQL the superior choice.
