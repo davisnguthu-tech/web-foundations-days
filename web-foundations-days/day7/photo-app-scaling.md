@@ -12,8 +12,6 @@
 - **Time Conversion Rule:** 1 day ≈ 100,000 seconds (standard engineering approximation).
 - **Peak Traffic Multiplier:** 5× average traffic.
 
----
-
 ### Traffic Calculations
 
 #### Uploads per Second (Writes)
@@ -28,8 +26,6 @@
 - **Average Feed Views/sec:** 50,000,000 ÷ 100,000 = 500 feed views/sec
 - **Peak Feed Views/sec (5×):** 500 × 5 = 2,500 feed views/sec
 
----
-
 ### Storage Calculations
 
 #### Photo Data Storage per Year
@@ -37,8 +33,6 @@
 - **Storage per Upload (Photo + Thumbnail):** 2.00 MB + 0.05 MB = 2.05 MB
 - **Daily Storage Added:** 1,000,000 uploads/day × 2.05 MB = 2,050,000 MB ≈ 2,050 GB = 2.05 TB/day
 - **Yearly Storage Added:** 2.05 TB/day × 365 days = 748.25 TB/year
-
----
 
 ## 2. Workload & Storage Architecture Decisions
 
@@ -48,25 +42,15 @@ SnapShare is a **read-heavy system**. The system handles 500 reads/sec compared 
 
 **Design Implications:**
 
-1. **Aggressive Read Caching:** Since feed requests dominate traffic, caching hot feed data in an in-memory database like Redis reduces direct database load.
-2. **Read Replicas:** Read queries can be offloaded from the primary database to multiple read replicas to scale read throughput seamlessly.
-3. **CDN Optimization:** Serving photo binaries and thumbnails from CDN edge servers prevents application servers and storage systems from being overwhelmed by image fetching traffic.
-
----
+1.  **Aggressive Read Caching:** Since feed requests dominate traffic, caching hot feed data in an in-memory database like Redis reduces direct database load.
+2.  **Read Replicas:** Read queries can be offloaded from the primary database to multiple read replicas to scale read throughput seamlessly.
+3.  **CDN Optimization:** Serving photo binaries and thumbnails from CDN edge servers prevents application servers and storage systems from being overwhelmed by image fetching traffic.
 
 ### Photo Storage Rationale
 
 Binary image files should **never** be stored directly inside a relational database (e.g., as BLOB types).
-
-**Why Database Storage fails for photos:**
-
-- Storing large binary files causes massive database file bloat, drastically slowing down index maintenance, backup processes, and query performance.
-- Databases use memory and CPU inefficiently when streaming multi-megabyte binary streams.
-
-**Where they belong instead:**
-Photo binaries are stored in **Object Storage** (e.g., AWS S3 or Google Cloud Storage), which is designed for durable, highly scalable, cost-effective binary file storage. The relational database stores only the structured metadata and image URLs pointing to Object Storage.
-
----
+**Why Database Storage fails for photos:** Storing large binary files causes massive database file bloat, drastically slowing down index maintenance, backup processes, and query performance.
+**Where they belong instead:** Photo binaries are stored in **Object Storage** (e.g., AWS S3), which is designed for durable, highly scalable, cost-effective binary file storage. The relational database stores only the structured metadata and image URLs.
 
 ## 3. System Architecture Diagram
 
@@ -98,6 +82,8 @@ Photo binaries are stored in **Object Storage** (e.g., AWS S3 or Google Cloud St
       └────────┘ └──────────┘         └────────────┘    └─────────┘
 ```
 
+---
+
 ## 4. Component Definitions
 
 - **CDN (Content Delivery Network):** Serves cached photos, thumbnails, and static app assets from geographic edge servers close to users to minimize latency and offload bandwidth.
@@ -108,30 +94,48 @@ Photo binaries are stored in **Object Storage** (e.g., AWS S3 or Google Cloud St
 - **Read Replicas:** Replicates data from the primary database to serve read-only feed queries and user profile lookups.
 - **Object Storage:** Stores unstructured binary photo and thumbnail files reliably at high scale and low cost.
 - **Message Queue:** Accepts asynchronous processing jobs (e.g., thumbnail generation) from application servers so client requests complete without waiting.
-- **Worker Server:** Consumes background jobs from the message queue to download original photo binaries, generate optimized 50 KB thumbnails, upload rendered thumbnails to Object Storage, and update metadata in the Primary Database.
+- **Worker Server:** Worker servers are stateless, background compute instances decoupled via a message queue. They perform CPU-intensive tasks too slow for the synchronous path. They long-poll the thumbnail queue for jobs `{photo_id, s3_url}`, download the original image from Object Storage, generate 3–5 thumbnail sizes (50 KB), upload thumbnails back to Object Storage, update the photo record in Primary DB from `PENDING` to `AVAILABLE`, and delete the job. They auto-scale based on queue depth. If a worker fails, message visibility timeout expires and another worker retries, providing fault tolerance.
 
 ---
 
 ## 5. Step-by-Step Photo Upload Flow
 
-1. **Client Request:** The user selects a 2 MB photo and submits a `POST /photos` HTTP request.
-2. **Load Balancing:** The Load Balancer intercepts the incoming HTTPS request and routes it to an available, healthy stateless App Server.
-3. **Binary Storage:** The App Server streams the raw 2 MB photo file directly into Object Storage (e.g., AWS S3), which stores the binary asset and returns a unique object key/URL.
-4. **Metadata Record:** The App Server writes a new metadata record (`photo_id`, `user_id`, `photo_url`, `created_at`) to the Primary Database.
-5. **Asynchronous Task Enqueue:** The App Server publishes a processing payload (`{photo_id, photo_url}`) to the Message Queue for asynchronous background worker processing.
-6. **Immediate Client Response:** The App Server responds to the client immediately with HTTP status `201 Created` so the user does not wait for image processing.
-7. **Background Thumbnail Processing:**
-   - A Worker Server pulls the job from the Message Queue.
-   - The Worker downloads the 2 MB original photo binary from Object Storage.
-   - The Worker processes and resizes the image into a 50 KB thumbnail.
-   - The Worker uploads the 50 KB thumbnail back to Object Storage.
-   - The Worker updates the photo's database record in the Primary Database with the generated `thumbnail_url`.
+This design uses direct client-to-object-storage upload to avoid bottlenecking application servers with large binary streams.
+
+1. **Step 1: Request Upload URL**  
+   Client -> Load Balancer -> App Server. Client authenticates via `POST /photos/request-upload`. App Server verifies user quota.
+2. **Step 2: Reserve Metadata & Get Pre-Signed URL**  
+   App Server generates a unique PhotoID (UUID), creates a row in Photos Metadata DB (Primary MySQL) with `user_id`, `photo_id`, `status=PENDING`, and requests a pre-signed PUT URL from S3. It returns PhotoID and URL to client. No binary moved yet.
+3. **Step 3: Direct Upload**  
+   Client PUTs the full-resolution 2MB JPEG DIRECTLY to S3 using the pre-signed URL. This traffic bypasses our web servers entirely, saving massive ingress/egress bandwidth. S3 returns `200 OK` to client.
+4. **Step 4: Commit Upload**  
+   Client calls `POST /photos/{id}/commit` to App Server confirming S3 upload success. App Server updates DB to `UPLOADED` and enqueues a thumbnail job to Message Queue.
+5. **Step 5: Immediate Client Response**  
+   App Server responds with HTTP `201 Created` so user does not wait for image processing.
+6. **Step 6: Asynchronous Processing**  
+   Worker Server pulls job from queue, downloads original from S3, generates 50KB thumbnail, uploads thumbnail to S3, updates Photos DB record to `AVAILABLE` with thumbnail URLs, and invalidates/warms Redis feed cache.
+7. **Step 7: Read Path**  
+   All subsequent reads are served from CDN (for images) and Read Replicas + Redis cache (for metadata).
 
 ---
 
 ## 6. Architectural Trade-Offs
 
-1. **Eventual Consistency vs. Real-Time Processing (Thumbnail Queue)**
-   - *Trade-off:* Delegating thumbnail processing to an asynchronous Message Queue gives clients near-instant upload responses. However, it introduces a temporary window of eventual consistency where the feed may display a fallback image or placeholder for a few seconds until the worker completes processing and updates the database record.
-2. **Stale Cache Data vs. Database Load Reduction (Feed Caching)**
-   - *Trade-off:* Caching user feeds in Redis offloads massive read volume (2,500 peak reads/sec) from the primary database. The trade-off is cache invalidation complexity—users may briefly see stale feeds until their cache key expires or is explicitly invalidated upon a new upload.
+### Trade-off 1: Direct Client-to-S3 Upload vs. Proxying Through Web Servers
+
+- **Option A (Chosen — Direct Upload):**
+  - *Pros:* Web servers handle only lightweight JSON payloads instead of multi-MB binary streams. At peak (50 uploads/sec × 2 MB = 100 MB/s ingress), proxying would require 10× more web servers. Direct upload is infinitely scalable and lower latency.
+  - *Cons:* Harder to validate image content before storage; requires pre-signed URL logic and client-side retry handling.
+- **Option B (Proxying Through Web Servers):**
+  - *Pros:* Easy to validate, resize, and reject malicious or invalid files in one place before hitting storage.
+  - *Cons:* Web servers become bandwidth and CPU bottlenecks. For SnapShare's scale, handling image fetch + upload traffic would collapse the web tier. Direct upload is mandatory for production.
+
+### Trade-off 2: Synchronous vs. Asynchronous Thumbnail Processing (Immediate Availability vs. Processing Speed)
+
+- **Option A (Chosen — Asynchronous via Workers & Queue):**
+  - *Pros:* Upload API returns in <200ms. User gets immediate success. Workers scale independently based on queue depth, and background failures can retry safely without impacting the user experience.
+  - *Cons:* Eventual consistency—a 2–5 second window where the original image exists but thumbnails are not yet marked `AVAILABLE`, requiring placeholder/fallback image logic on client feeds.
+- **Option B (Synchronous in Request Path):**
+  - *Pros:* Strong consistency—when the upload call returns, all thumbnails are guaranteed to exist immediately. Simpler architecture without message queues or worker pools.
+  - *Cons:* Upload requests take 2–3 seconds of CPU-intensive resizing, tying up web server threads, causing timeouts and terrible UX at peak loads. Unacceptable at scale.
+
