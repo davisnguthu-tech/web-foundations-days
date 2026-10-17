@@ -96,7 +96,6 @@ Photo binaries are stored in **Object Storage** (e.g., AWS S3 or Google Cloud St
       │Primary │>│Read      │         │ Message    │───>│ Worker  │
       │   DB   │ │Replicas  │         │ Queue      │    │ Server  │
       └────────┘ └──────────┘         └────────────┘    └─────────┘
-```
 
 ## 4. Component Definitions
 
@@ -135,3 +134,4 @@ Photo binaries are stored in **Object Storage** (e.g., AWS S3 or Google Cloud St
    - _Trade-off:_ By delegating thumbnail generation to an asynchronous Message Queue and Worker pool, the upload API responds almost instantly to the user[cite: 1]. However, there is a short window of eventual consistency where a user's feed may display a fallback image or placeholder for a few seconds until the worker finishes creating the thumbnail[cite: 1].
 2. **Stale Cache Data vs. Database Load Reduction (Feed Caching)**
    - _Trade-off:_ Caching feed pages in Redis allows SnapShare to serve 2,500 peak reads/sec with low latency and minimal database load[cite: 1]. However, if a user uploads a new photo or follows a new account, cached feeds may show slightly stale content until the user's cache key is explicitly invalidated or its TTL expires[cite: 1].
+```
