@@ -96,42 +96,42 @@ Photo binaries are stored in **Object Storage** (e.g., AWS S3 or Google Cloud St
       │Primary │>│Read      │         │ Message    │───>│ Worker  │
       │   DB   │ │Replicas  │         │ Queue      │    │ Server  │
       └────────┘ └──────────┘         └────────────┘    └─────────┘
+```
 
 ## 4. Component Definitions
 
-- **CDN (Content Delivery Network):** Serves cached photos, thumbnails, and static app assets from geographic edge servers close to users to minimize latency and offload bandwidth[cite: 1].
-- **Load Balancer:** Distributes incoming HTTPS traffic across available application servers to prevent single-server overload and perform health checks[cite: 1].
-- **App Servers (Stateless):** Executes application logic, validates authentication, coordinates database requests, and manages upload pipelines[cite: 1].
-- **Cache (Redis):** Stores recent user feeds and frequently queried metadata in memory to deliver sub-millisecond response times and reduce database read traffic[cite: 1].
-- **Primary Database:** Handles all data writes (user profiles, photo metadata, follow relations) and enforces transactional ACID compliance[cite: 1].
-- **Read Replicas:** Replicates data from the primary database to serve read-only feed queries and user profile lookups[cite: 1].
-- **Object Storage:** Stores unstructured binary photo and thumbnail files reliably at high scale and low cost[cite: 1].
-- **Message Queue:** Accepts asynchronous processing jobs (e.g., thumbnail generation) from application servers so client requests complete without waiting[cite: 1].
-- **Worker Server:** Consumes jobs from the message queue in the background to fetch original photos, render 50 KB thumbnails, and upload them to Object Storage[cite: 1].
+- **CDN (Content Delivery Network):** Serves cached photos, thumbnails, and static app assets from geographic edge servers close to users to minimize latency and offload bandwidth.
+- **Load Balancer:** Distributes incoming HTTPS traffic across available application servers to prevent single-server overload and perform health checks.
+- **App Servers (Stateless):** Executes application logic, validates authentication, coordinates database requests, and manages upload pipelines.
+- **Cache (Redis):** Stores recent user feeds and frequently queried metadata in memory to deliver sub-millisecond response times and reduce database read traffic.
+- **Primary Database:** Handles all data writes (user profiles, photo metadata, follow relations) and enforces transactional ACID compliance.
+- **Read Replicas:** Replicates data from the primary database to serve read-only feed queries and user profile lookups.
+- **Object Storage:** Stores unstructured binary photo and thumbnail files reliably at high scale and low cost.
+- **Message Queue:** Accepts asynchronous processing jobs (e.g., thumbnail generation) from application servers so client requests complete without waiting.
+- **Worker Server:** Consumes background jobs from the message queue to download original photo binaries, generate optimized 50 KB thumbnails, upload rendered thumbnails to Object Storage, and update metadata in the Primary Database.
 
 ---
 
 ## 5. Step-by-Step Photo Upload Flow
 
-1. **Client Request:** The user selects a 2 MB photo and submits a `POST /photos` request[cite: 1].
-2. **Load Balancing:** The Load Balancer accepts the HTTP request and routes it to an available, healthy App Server[cite: 1].
-3. **Binary Storage:** The App Server streams the raw 2 MB photo file directly into Object Storage, which returns a unique file key/URL[cite: 1].
-4. **Metadata Record:** The App Server writes a new record into the Primary Database (containing `photo_id`, `user_id`, `photo_url`, `created_at`)[cite: 1].
-5. **Asynchronous Task Enqueue:** The App Server pushes a job payload (`{photo_id, photo_url}`) to the Message Queue for thumbnail processing[cite: 1].
-6. **Immediate Response:** The App Server responds immediately to the user client with HTTP status `201 Created`[cite: 1].
+1. **Client Request:** The user selects a 2 MB photo and submits a `POST /photos` HTTP request.
+2. **Load Balancing:** The Load Balancer intercepts the incoming HTTPS request and routes it to an available, healthy stateless App Server.
+3. **Binary Storage:** The App Server streams the raw 2 MB photo file directly into Object Storage (e.g., AWS S3), which stores the binary asset and returns a unique object key/URL.
+4. **Metadata Record:** The App Server writes a new metadata record (`photo_id`, `user_id`, `photo_url`, `created_at`) to the Primary Database.
+5. **Asynchronous Task Enqueue:** The App Server publishes a processing payload (`{photo_id, photo_url}`) to the Message Queue for asynchronous background worker processing.
+6. **Immediate Client Response:** The App Server responds to the client immediately with HTTP status `201 Created` so the user does not wait for image processing.
 7. **Background Thumbnail Processing:**
-   - A Worker Server pulls the job from the Message Queue[cite: 1].
-   - The Worker downloads the 2 MB original photo from Object Storage[cite: 1].
-   - The Worker resizes the photo into a 50 KB thumbnail[cite: 1].
-   - The Worker uploads the 50 KB thumbnail back into Object Storage[cite: 1].
-   - The Worker updates the photo's record in the Primary Database with the new `thumbnail_url`[cite: 1].
+   - A Worker Server pulls the job from the Message Queue.
+   - The Worker downloads the 2 MB original photo binary from Object Storage.
+   - The Worker processes and resizes the image into a 50 KB thumbnail.
+   - The Worker uploads the 50 KB thumbnail back to Object Storage.
+   - The Worker updates the photo's database record in the Primary Database with the generated `thumbnail_url`.
 
 ---
 
 ## 6. Architectural Trade-Offs
 
 1. **Eventual Consistency vs. Real-Time Processing (Thumbnail Queue)**
-   - _Trade-off:_ By delegating thumbnail generation to an asynchronous Message Queue and Worker pool, the upload API responds almost instantly to the user[cite: 1]. However, there is a short window of eventual consistency where a user's feed may display a fallback image or placeholder for a few seconds until the worker finishes creating the thumbnail[cite: 1].
+   - *Trade-off:* Delegating thumbnail processing to an asynchronous Message Queue gives clients near-instant upload responses. However, it introduces a temporary window of eventual consistency where the feed may display a fallback image or placeholder for a few seconds until the worker completes processing and updates the database record.
 2. **Stale Cache Data vs. Database Load Reduction (Feed Caching)**
-   - _Trade-off:_ Caching feed pages in Redis allows SnapShare to serve 2,500 peak reads/sec with low latency and minimal database load[cite: 1]. However, if a user uploads a new photo or follows a new account, cached feeds may show slightly stale content until the user's cache key is explicitly invalidated or its TTL expires[cite: 1].
-```
+   - *Trade-off:* Caching user feeds in Redis offloads massive read volume (2,500 peak reads/sec) from the primary database. The trade-off is cache invalidation complexity—users may briefly see stale feeds until their cache key expires or is explicitly invalidated upon a new upload.
